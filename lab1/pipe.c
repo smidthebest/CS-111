@@ -56,6 +56,7 @@ int main(int argc, char *argv[])
                 }
                 // Execute command.
                 int status = execlp(argv[cur], argv[cur], NULL);
+                perror("Command failed.\n"); 
                 exit(status);
             }
             else
@@ -103,6 +104,7 @@ int main(int argc, char *argv[])
         else if (child == 0)
         {                                                // In child process
             int status = execlp(argv[1], argv[1], NULL); // Execute command
+            perror("Command failed.\n"); 
             exit(status);
         }
         else

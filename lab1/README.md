@@ -1,17 +1,22 @@
-## UID: 123456789
+## UID: 305935705
 
 ## Pipe Up
 
-One sentence description
+This is a application which mirrors the behavior of pipes and strings the output from multiple commands together. 
 
 ## Building
 
-Explain briefly how to build your program
+`make`
+`./pipe [YOUR COMMANDS HERE]`
 
 ## Running
 
-Show an example run of your program, using at least two additional arguments, and what to expect
+`./pipe ls cat wc`
+which returns: `6    6   51` when run in the lab1 directory. 
+It is running ls and then ouputting that to cat which in turn is outputting that to wc which is returning 
+the word count statistics of ls of the lab1 directory. 
 
 ## Cleaning up
 
-Explain briefly how to clean up all binary files
+Simply run 
+`make clean`
