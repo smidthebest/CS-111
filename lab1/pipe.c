@@ -6,6 +6,27 @@
 #include <errno.h>
 #include <signal.h>
 
+int check_child_status(int child_pid)
+{
+    int status;
+    waitpid(child_pid, &status, 0);
+    if (WIFEXITED(status))
+    { // Check if child process worked.
+        return WEXITSTATUS(status);
+    }
+    else
+    { // Error in child process.
+        return 1;
+    }
+}
+
+int execute_command(char *arg)
+{
+    int status = execlp(arg, arg, NULL);
+    perror("Command failed.\n"); // If thread returns, command has failed.
+    exit(status);                // Exit with command status.
+}
+
 int main(int argc, char *argv[])
 {
     if (argc > 2)
@@ -55,9 +76,7 @@ int main(int argc, char *argv[])
                     close(pipe_list[cur - 1][1]);
                 }
                 // Execute command.
-                int status = execlp(argv[cur], argv[cur], NULL);
-                perror("Command failed.\n"); 
-                exit(status);
+                execute_command(argv[cur]);
             }
             else
             { // In parent process
@@ -79,14 +98,9 @@ int main(int argc, char *argv[])
 
         for (int i = 0; i < argc - 1; i++)
         {
-            int status;
-            waitpid(children[i], &status, 0);
-            if (WIFEXITED(status))
-            {
-                int exit = WEXITSTATUS(status);
-                if (exit)
-                    return exit; // If any child process had an error, return an error.
-            }
+            int status = check_child_status(children[i]);
+            if (status)
+                return status; // If any child process had an error, return an error.
         }
     }
     else if (argc < 2)
@@ -95,31 +109,20 @@ int main(int argc, char *argv[])
         exit(EINVAL);
     }
     else if (argc == 2)
-    { // If there are one commands.
+    { // If there is one command.
         int child = fork();
         if (child == -1)
         { // Check if fork is valid
             perror("Was not able to fork.\n");
+            exit(1);
         }
         else if (child == 0)
-        {                                                // In child process
-            int status = execlp(argv[1], argv[1], NULL); // Execute command
-            perror("Command failed.\n"); 
-            exit(status);
+        {                             // In child process
+            execute_command(argv[1]); // Execute command
         }
         else
         { // In parent process
-            int status;
-            waitpid(child, &status, 0);
-            if (WIFEXITED(status))
-            { // Check if child process worked.
-                return WEXITSTATUS(status);
-            }
-            else
-            { // Error in child process.
-                return 1;
-            }
-            return 0;
+            return check_child_status(child);
         }
     }
     return 0;
