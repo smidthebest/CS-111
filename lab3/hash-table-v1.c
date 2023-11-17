@@ -21,7 +21,7 @@ struct hash_table_entry {
 
 struct hash_table_v1 {
 	struct hash_table_entry entries[HASH_TABLE_CAPACITY];
-    pthread_mutex_t mutex; 
+    pthread_mutex_t mutex;  //Field to store the single mutex. 
 };
 
 struct hash_table_v1 *hash_table_v1_create()
@@ -29,8 +29,9 @@ struct hash_table_v1 *hash_table_v1_create()
 	struct hash_table_v1 *hash_table = calloc(1, sizeof(struct hash_table_v1));
 	assert(hash_table != NULL);
 
-    if(pthread_mutex_init(&hash_table->mutex, NULL) != 0){
-        exit(EXIT_FAILURE);
+    int err = pthread_mutex_init(&hash_table->mutex, NULL); //Initialize the mutex 
+    if(err != 0){  //check for error. 
+        exit(err);
     }
 
 	for (size_t i = 0; i < HASH_TABLE_CAPACITY; ++i) {
@@ -79,7 +80,10 @@ void hash_table_v1_add_entry(struct hash_table_v1 *hash_table,
                              uint32_t value)
 {
 
-    pthread_mutex_lock(&hash_table->mutex);
+    int err = pthread_mutex_lock(&hash_table->mutex); //Lock the mutex. 
+    if(err != 0){
+        exit(err); 
+    }
 
 	struct hash_table_entry *hash_table_entry = get_hash_table_entry(hash_table, key);
 	struct list_head *list_head = &hash_table_entry->list_head;
@@ -96,7 +100,10 @@ void hash_table_v1_add_entry(struct hash_table_v1 *hash_table,
 	list_entry->value = value;
 	SLIST_INSERT_HEAD(list_head, list_entry, pointers);
 
-    pthread_mutex_unlock(&hash_table->mutex); 
+    err = pthread_mutex_unlock(&hash_table->mutex);  //Unlock the mutex. 
+    if(err != 0){
+        exit(err); 
+    }
 }
 
 uint32_t hash_table_v1_get_value(struct hash_table_v1 *hash_table,
@@ -112,7 +119,10 @@ uint32_t hash_table_v1_get_value(struct hash_table_v1 *hash_table,
 void hash_table_v1_destroy(struct hash_table_v1 *hash_table)
 {
 
-    pthread_mutex_destroy(&hash_table->mutex);
+    int err = pthread_mutex_destroy(&hash_table->mutex); //destroying the mutex. 
+    if(err != 0){
+        exit(err); 
+    }
 
 	for (size_t i = 0; i < HASH_TABLE_CAPACITY; ++i) {
 		struct hash_table_entry *entry = &hash_table->entries[i];
@@ -125,4 +135,6 @@ void hash_table_v1_destroy(struct hash_table_v1 *hash_table)
 		}
 	}
 	free(hash_table);
+
+    
 }

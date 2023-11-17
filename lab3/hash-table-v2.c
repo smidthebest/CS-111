@@ -17,7 +17,7 @@ SLIST_HEAD(list_head, list_entry);
 
 struct hash_table_entry {
 	struct list_head list_head;
-    pthread_mutex_t mutex;
+    pthread_mutex_t mutex; //Creating a mutex for each bucket. 
 };
 
 struct hash_table_v2 {
@@ -30,8 +30,9 @@ struct hash_table_v2 *hash_table_v2_create()
 	assert(hash_table != NULL);
 	for (size_t i = 0; i < HASH_TABLE_CAPACITY; ++i) {
 		struct hash_table_entry *entry = &hash_table->entries[i];
-        if(pthread_mutex_init(&entry->mutex, NULL) != 0){
-            exit(EXIT_FAILURE);
+        int err = pthread_mutex_init(&entry->mutex, NULL); 
+        if(err != 0){ //Creating a mutex
+            exit(err);
         }
 		SLIST_INIT(&entry->list_head);
 	}
@@ -77,9 +78,11 @@ void hash_table_v2_add_entry(struct hash_table_v2 *hash_table,
                              uint32_t value)
 {
 	struct hash_table_entry *hash_table_entry = get_hash_table_entry(hash_table, key);
-   
 	struct list_head *list_head = &hash_table_entry->list_head;
-    pthread_mutex_lock(&hash_table_entry->mutex);
+    int err = pthread_mutex_lock(&hash_table_entry->mutex); //Lock the bucket 
+    if(err != 0){
+        exit(err); 
+    }
 
 	struct list_entry *list_entry = get_list_entry(hash_table, key, list_head);
 
@@ -93,7 +96,10 @@ void hash_table_v2_add_entry(struct hash_table_v2 *hash_table,
 	list_entry->key = key;
 	list_entry->value = value;
 	SLIST_INSERT_HEAD(list_head, list_entry, pointers);
-    pthread_mutex_unlock(&hash_table_entry->mutex);
+    err = pthread_mutex_unlock(&hash_table_entry->mutex); //Unlock the mutex
+    if(err != 0){
+        exit(err); 
+    }
 
 }
 
@@ -111,7 +117,10 @@ void hash_table_v2_destroy(struct hash_table_v2 *hash_table)
 {
 	for (size_t i = 0; i < HASH_TABLE_CAPACITY; ++i) {
 		struct hash_table_entry *entry = &hash_table->entries[i];
-        pthread_mutex_destroy(&entry->mutex);
+        int err = pthread_mutex_destroy(&entry->mutex); //Destroy the mutex. 
+        if(err != 0){
+            exit(err); 
+        }
 		struct list_head *list_head = &entry->list_head;
 		struct list_entry *list_entry = NULL;
 		while (!SLIST_EMPTY(list_head)) {
